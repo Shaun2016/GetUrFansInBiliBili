@@ -96,7 +96,7 @@ def write_csv(all_fans):
     fans_list = [fan.attr_list() for fan in all_fans]
     headers = ['id', 'name', 'sex', 'level', '大会员', '官方', '粉丝数']
     file_name = time.strftime('%Y-%m-%d %H-%M', time.localtime()) + '.csv'
-    with open('../' + file_name, 'w', errors='ignore', newline='') as f:
+    with open('../' + file_name, 'w', newline='', errors='ignore') as f:
         f_csv = csv.writer(f)
         f_csv.writerow(headers)
         f_csv.writerows(fans_list)
