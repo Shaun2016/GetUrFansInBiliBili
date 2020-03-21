@@ -1,4 +1,6 @@
-id: 354456241
-cookie: ....
-last_id: 15844625420010936455
+id: 354223460
+cookie: ...
+last_id: ...
 page_size:
+thread_pool_size: 5
+csv_file: 2020-03-21 19-13_100063.csv
