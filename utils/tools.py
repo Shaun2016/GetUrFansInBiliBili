@@ -88,7 +88,7 @@ def statistic_fans(all_fans):
     log_content += '1W-5W\t' + str(fans_nums[3]) + '\t' + fn(fans_nums[3]/len(all_fans)) + '\n'
     log_content += '5W-10W\t' + str(fans_nums[4]) + '\t' + fn(fans_nums[4]/len(all_fans))+ '\n'
     log_content += '10W+\t' + str(fans_nums[5]) + '\t' + fn(fans_nums[5]/len(all_fans)) + '\n'
-    log_content += '你的粉丝中粉丝数超过1W的有：\n'
+    log_content += '你的粉丝中粉丝数超过1W的有' + str(len(up_list)) + '个，他们是（粉丝数降序）：\n'
     for i in up_list:
         log_content += i.name + ', '
     log_content = log_content[:-2]
@@ -107,6 +107,17 @@ def write_csv(all_fans, suffix=''):
     headers = ['id', 'name', 'sex', 'level', '大会员', '官方', '粉丝数']
     file_name = time.strftime('%Y-%m-%d %H-%M', time.localtime()) + '_' + suffix + '.csv'
     with open('../' + file_name, 'w', newline='', errors='ignore') as f:
+        f_csv = csv.writer(f)
+        f_csv.writerow(headers)
+        f_csv.writerows(fans_list)
+
+def write_csv_all_attr(all_fans, suffix=''):
+    if suffix == '':
+        suffix = time.strftime('%Y-%m-%d %H-%M-', time.localtime()) + str(len(all_fans))
+    fans_list = [fan.attr_list_all() for fan in all_fans]
+    headers = ['id', 'name', 'sex', 'level', '大会员', '官方', '粉丝数', '关注数', '播放数', '阅读数', '获赞数']
+    file_path = suffix + '.csv'
+    with open(file_path, 'w', newline='', errors='ignore') as f:
         f_csv = csv.writer(f)
         f_csv.writerow(headers)
         f_csv.writerows(fans_list)

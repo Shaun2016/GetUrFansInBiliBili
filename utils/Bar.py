@@ -4,8 +4,10 @@ import utils.tools as Tools
 
 class Bar(object):
     def __init__(self, total_size, title, block_size=30, signal='#'):
+        if total_size < block_size:
+            block_size = total_size
         self.total_size = total_size    # 总进度数
-        self.block_size = block_size        # 进度条格子数（默认为 50）
+        self.block_size = block_size        # 进度条格子数（默认为 30）
         self.process_size = min(total_size, self.block_size) # 设置进度条长度最大值
         self.title = title  # 进度条前的名称
         self.process_now = 0  # 当前进度

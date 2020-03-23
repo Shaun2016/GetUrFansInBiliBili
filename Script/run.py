@@ -12,3 +12,11 @@ if __name__ == '__main__':
     else:
         crawler = Tools.config_parse('../' + config_file)
     crawler.get_my_all_fans()
+    print('开始更新粉丝信息...')
+    turn, num = 0, 5000
+    while turn * num < len(crawler.all_fans):
+        start = turn * num
+        end = (turn + 1) * num
+        crawler.update_fans(start=start, end=end)
+        turn += 1
+    Tools.write_csv_all_attr(crawler.all_fans, 'all')

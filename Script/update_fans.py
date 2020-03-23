@@ -21,5 +21,10 @@ if __name__ == '__main__':
     print('载入完毕')
     fans.sort(key=lambda u: int(u.follower_num), reverse=True)
     crawler.all_fans = fans
-    crawler.update_fans()
-    Tools.write_csv(crawler.all_fans)
+    turn, num = 17, 5000
+    while turn*num < len(fans):
+        start = turn * num
+        end = (turn + 1) * num
+        crawler.update_fans(start=start, end=end)
+        turn += 1
+    Tools.write_csv_all_attr(crawler.all_fans, 'all')

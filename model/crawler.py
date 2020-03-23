@@ -1,4 +1,4 @@
-import requests, json, time, random
+import requests, json, time, random, http.client
 from model.user import User
 from utils.expection import RequestFailException, NoFansException
 import utils.tools as Tools
@@ -11,7 +11,7 @@ class Crawler(object):
         self.cookie = cookie
         self.last_id = last_id
         self.page_size = page_size
-        self.all_fans = {}
+        self.all_fans = set()
         # 初始化自己的粉丝数
         following, follower = self.user_following_follower(uid)
         # 计算总进度长度
@@ -94,36 +94,52 @@ class Crawler(object):
                 error_time += 1
                 continue
             except NoFansException as ne:
-                print('finish: ', ne)
+                print('    finish: ', ne)
                 break
             self.bar.update_once()
             self.all_fans |= fans_one_page
         print('粉丝获取完毕...')
-        Tools.write_csv(self.all_fans, 'old')
-        sorted(self.all_fans, key=lambda f: f.follower_num, reverse=True)
-        print('保存数据完毕...\n开始更新粉丝信息...')
-        # 按粉丝数降序排列
-        self.update_fans()
+        self.all_fans = list(self.all_fans)
+        self.all_fans.sort(key=lambda f: int(f.follower_num), reverse=True)
+        Tools.write_csv(self.all_fans, str(len(self.all_fans)))   # 按粉丝数降序排列
         Tools.statistic_fans(self.all_fans)
-        Tools.write_csv(self.all_fans, 'updated')
 
-    # 更新所有粉丝信息
-    def update_fans(self):
-        self.bar = Bar(len(self.all_fans), 'Update Fans: ')
+    # 更新部分粉丝信息，由于全量更新容易失败，按照粉丝的粉丝量给出粉丝范围
+    def update_fans(self, start=0, end=0):
+        if end == 0 or end > len(self.all_fans):
+            end = len(self.all_fans)    # 如果没有指定则为全部粉丝
+        self.bar = Bar(end - start, 'Update Fans: ')
         # with ThreadPoolExecutor(5) as executor:
         #     for fan in self.all_fans:
         #         executor.submit(self.set_user_following_follower, fan)
-        tmp = []
-        for index, fan in enumerate(self.all_fans):
-            self.set_user_following_follower(fan)
-            tmp.append(fan)
-            time.sleep(0.1)
+        self.all_fans = list(self.all_fans)
+        for index, fan in enumerate(self.all_fans[start: end]):
+            self.set_user_following_follower(fan)   # 更新粉丝的粉丝数与关注数
+            self.set_user_up_state(fan)             # 更新粉丝的 UP 信息
+            # time.sleep(0.1)
             if (index + 1) % 60 == 0:
-                time.sleep(random.randint(3, 6))    # 每请求60次睡眠3-6秒
-            # 防止中途失败，每5000条保存一次
-            group_num = 5000
-            if (index + 1) % group_num == 0:
-                Tools.write_csv(tmp, str(index-group_num+1) + '_' + str(index+1))
-                print('  save the fans from %d-%d' % (index-group_num+1, index+1))
-                tmp.clear()
+                time.sleep(random.randint(1, 3))    # 每请求 60 次睡眠 1-3 秒
+        Tools.write_csv_all_attr(self.all_fans[start: end], str(start) + '_' + str(end))
+        print('  save the fans from %d-%d' % (start, end))
 
+    # 显示 UP 主上传的情况：获赞数，播放数，阅读数
+    def up_state(self, mid):
+        conn = http.client.HTTPSConnection("api.bilibili.com")
+        payload = ''
+        headers = {
+            'Cookie': self.cookie,
+            'Referer': 'https://space.bilibili.com/' + str(mid) + '/fans/fans'
+        }
+        conn.request("GET", "/x/space/upstat?mid=" + str(mid) + "&jsonp=jsonp&callback=__jp5", payload, headers)
+        res = conn.getresponse()
+        data = res.read()
+        return json.loads(str(data)[8:-2])
+
+    def set_user_up_state(self, user):
+        state = self.up_state(user.mid)
+        user.archive_view = state['data']['archive']['view']
+        user.article_view = state['data']['article']['view']
+        user.likes = state['data']['likes']
+
+if __name__ == '__main__':
+    print()
